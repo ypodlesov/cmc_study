@@ -1,0 +1,112 @@
+ANSWERS
+***Answer 1:
+-f, --whatis
+***Answer 2:
+1 write - send a message to another user
+2 write - write to a file descriptor (function in C)
+***Answer 3:
+cat - concatenate FILE(s) to standard output.
+grep - searches any given input files, selecting lines that match one or more patterns. 
+head - head – display first lines of a file 
+yes - outputs expletive, or, by default, “y”, forever. 
+***Answer 4:
+at first files, then directories, both in lexicographical order
+***Answer 5:
+'d' means directory, also are able: 
+					 b     Block special file.
+           c     Character special file.
+           l     Symbolic link.
+           p     FIFO.
+           s     Socket.
+           w     Whiteout.
+'Jul 24 11:41' means abbreviated month, day-of-month file was last modified, hour file last modified, minute file last modified
+***Answer 6:
+-S
+***Answer 7:
+host.conf
+***Answer 8:
+-rw-r--r--. 1 root root    58 июл 20 07:53 /etc/networks
+-rw-r--r--. 1 root root 12712 сен 11 16:30 /etc/passwd
+***Answer 9:
+cat /etc/hosts > ~/file3 
+cat /etc/passwd > ~/file3 
+cat /etc/fstab > ~/file3
+***Answer 10:
+rw-r----x 641
+r---wx--- 430
+rwxr-x--- 750
+r--r----x 441
+rw-rw--w- 662
+***Answer 11:
+umask = 022
+res = 666 & ~(umask) = 640 (rw-r-----)
+***Answer 12:
+umask 022
+***Answer 13:
+chmod 750 newtask1
+-rwxr-x---. 1 s02210684 s02210684    0 сен 25 13:47 newtask1
+***Answer 14:
+4 bytes
+***Answer 15:
+if we use ^C the 'cat' is killed and the last string is not written in file4
+as a result file4 content is "abc\n" - its size is 4b 
+***Answer 16:
+file5 - 5b "1234\n", file6 - 4b "1234"
+***Answer 17:
+
+***Answer 18:
+
+***Answer 19:
+
+***Answer 20:
+
+***Answer 21:
+
+***Answer 22:
+
+***Answer 23:
+
+***Answer 24:
+
+***Answer 25:
+
+***Answer 26:
+
+***Answer 27:
+
+***Answer 28:
+
+***Answer 29:
+
+***Answer 30:
+
+***Answer 31:
+
+***Answer 32:
+
+***Answer 33:
+
+***Answer 34:
+
+***Answer 35:
+
+***Answer 36:
+
+***Answer 37:
+
+***Answer 38:
+
+***Answer 39:
+
+***Answer 40:
+
+
+
+
+
+
+
+
+
+
+

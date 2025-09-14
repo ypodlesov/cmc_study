@@ -1,0 +1,8 @@
+#!/bin/sh
+
+g++ $1.cpp -g -Wall -Werror -std=gnu++2a -D_GNU_SOURCE -o main
+echo 'Successful compilation'
+rm -R *.dSYM
+./main
+rm main
+

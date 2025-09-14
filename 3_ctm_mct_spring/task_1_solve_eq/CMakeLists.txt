@@ -1,0 +1,1 @@
+add_catch(test_task_1_solve_eq test.cpp solve_eq.cpp)

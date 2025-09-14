@@ -1,0 +1,221 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage{amsthm} % в т.ч. для оформления доказательств
+\usepackage{cmap}                    % поиск в PDF
+\usepackage[T2A]{fontenc}            % кодировка
+\usepackage[utf8]{inputenc}            % кодировка исходного текста
+\usepackage[english,russian]{babel}    % локализация и переносы
+\usepackage{mathtext}                 % русские буквы в фомулах
+\usepackage{amsmath,amsfonts,amssymb,amsthm,mathtools} % AMS
+\usepackage{icomma} % "Умная" запятая: ,2$ --- число, , 2$ --- перечисление
+\usepackage{graphicx} % чтобы вставлять картинки
+
+\usepackage{setspace}
+\usepackage{blindtext}
+
+\usepackage{color}
+\definecolor{mine}{RGB}{10,54,100}
+\definecolor{Violet}{RGB}{120,80,120}
+\usepackage[unicode, colorlinks, urlcolor=mine, linkcolor=Violet, pagecolor=Violet]{hyperref}
+
+\usepackage{tikz}
+\usetikzlibrary{graphs}
+\usetikzlibrary{automata}
+
+%% Номера формул
+\mathtoolsset{showonlyrefs=true} % Показывать номера только у тех формул, на которые есть \eqref{} в тексте.
+
+%% Шрифты
+\usepackage{euscript}     % Шрифт Евклид
+\usepackage{mathrsfs} % Красивый матшрифт
+
+%% Свои команды
+\DeclareMathOperator{\sgn}{\mathop{sgn}}
+\newcommand\norm[1]{\lVert#1\rVert}
+\newcommand\normx[1]{\Vert#1\Vert}
+
+%% Перенос знаков в формулах (по Львовскому)
+\newcommand*{\hm}[1]{#1\nobreak\discretionary{}
+    {\hbox{$\mathsurround=0pt #1$}}{}}
+
+\newcommand{\RomanNumeralCaps}[1]
+{\MakeUppercase{\romannumeral #1}}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{mygray}{rgb}{0.4,0.4,0.4}
+\definecolor{mygreen}{rgb}{0,0,10}
+\definecolor{myorange}{rgb}{1.0,0.4,0}
+
+\lstdefinestyle{chstyle}{ %
+    backgroundcolor=\color{gray!12},
+    basicstyle=\ttfamily\small,
+    commentstyle=\color{green!60!black},
+    keywordstyle=\color{magenta},
+    stringstyle=\color{blue!50!red},
+    showstringspaces=false,
+    %captionpos=b,
+    numbers=left,
+    numberstyle=\footnotesize\color{gray},
+    numbersep=10pt,
+    stepnumber=1,
+    tabsize=2,
+    frame=L,
+    framerule=1pt,
+    rulecolor=\color{red},
+    breaklines=true,
+    inputpath=code
+}
+
+\usepackage{wasysym}
+\usepackage{amssymb}
+\pagecolor{white}
+\author{\href{https://github.com/ypodlesov}{Егор Подлесов}}
+\title{Отчет о выполненнном задании по численным методам линейной алгебры.}
+
+\begin{document}
+
+\maketitle
+\clearpage
+
+\section*{Краткий обзор.}
+
+Сатья показывает результаты реализации и замеров времени работы алгоритма решения \textbf{системы линейных алгебраических уравнений} методом \textbf{вращений Гивенса}.
+
+\begin{lstlisting}[caption=Схема проекта, style=chstyle, language=bash]
+cmc-numerical-methods-of-linear-algebra
+|-- benchmark
+|   --- CMakeLists.txt
+|   --- givens_rotations.cpp
+|-- CMakeLists.txt
+|-- src
+|   |-- CMakeLists.txt
+|   |-- common.h
+|   |-- givens_rotations.cpp
+|   |-- givens_rotations.h
+|   |-- matrix.cpp
+|   |-- matrix.h
+|   |-- triangular_matrix.cpp
+|   |-- triangular_matrix.h
+|   |-- vector.cpp
+|   |-- vector.h
+|-- tests
+    |-- CMakeLists.txt
+    |-- givens_rotations_ut.cpp
+    |-- SLAU_var_5.csv
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{src} - реализация классов \textbf{TMatrix}, \textbf{TVector}, а также решения \textbf{СЛАУ} вращениями Гивенса.  
+    \item \textbf{benchmark} - замер времени выполнения алгоритма.
+    \item \textbf{tests} - тестирование алгоритма.
+\end{itemize}
+
+\clearpage
+\section*{Постановка задачи.}
+\textbf{Дано:} Невырожденная матрица $A$ размеров 100 $\times$ 100. \\
+\textbf{Требуется:} 
+
+    \begin{enumerate}
+        \item Реализовать алгоритм решения \textbf{СЛАУ} с коэффициентами - элементами данной матрицы, используя метод вращений Гивенса. Вектор-результат $b$ сгенерировать из случайных чисел на отрезке $[-1, 1]$ с равномерным распределением. 
+То есть надо решить систему вида 
+$$ Ax = b \text{,} $$
+где $ A \in \mathbb{R}^{100 \times 100}\text{, }b \in \mathbb{R}^{100} $. 
+        \item Протестировать программу - убедиться что найденный вектор $x$ удовлетворяет следующему неравенству $ \norm{Ax - b} < \varepsilon $, для некоторого достаточно малого $ \varepsilon $. 
+        \item  Замерить время работы программы на входной матрице.
+    \end{enumerate}
+
+\section*{Метод вращений Гивенса.}
+Метод заключается в применении последовательных операций умножения на матрицы специального вида - так называемые матрицы вращений. Вследствии чего исходная матрица получает треугольный вид. 
+
+Матрица вращения имеет следующий вид: 
+\[
+  Q_{ij} =
+  \left[ 
+    {
+        \begin{array}{ccc}
+            q_{ii} & \ldots & q_{ij} \\ 
+            \vdots & \ddots & \vdots \\
+            q_{ji} & \ldots & q_{jj}
+        \end{array} 
+    } 
+  \right]
+\]
+То есть у матрицы $ Q_{ij} $ на всех позициях кроме 
+    $ (i, i), \; (i, j), \; (j, i), \; (j, j) $ стоят нулевые элементы. 
+При этом ненулевые элементы подчиняются слеющим соотношениям: 
+    $$
+        \begin{cases}
+            q_{ii} = q_{jj} \\ 
+            q_{ji} = -q_{ij} \\
+            q_{ii}^2 + q_{ij}^2 = 1
+        \end{cases}
+    $$
+
+\textbf{Замечание:} Можно положить, $ q_{ii} = cos(\alpha) $ и $ q_{ij} = sin(\alpha) $. Поэтому матрица $ Q_{ij} $ называется матрицей поворота на угол $ \alpha $.
+
+Таким образом можно занулять поддиагональные элементы в каждой колонке. 
+Для $ j $-й колонки зануление поддиагонального элемента в строке $ i $ подразумевает матрицу поворота $ Q_{ji} $ с следующими элементами:
+        
+$$
+\begin{cases}
+    q_{jj} = \frac{a_{jj}}{\sqrt{a_{jj} + a_{ij}}} \\
+    q_{ji} = \frac{a_{ij}}{\sqrt{a_{jj} + a_{ij}}}
+\end{cases}
+$$
+
+Проверив подстановкой, убеждаемся что элемент $ a_{ij} $ зануляется.
+
+Сделав это для всех поддиагональных элементов мы получаем разложение: 
+
+$$
+A = QR
+$$
+где $ Q $ - унитарная (ортогональная) матрица, $ R $ - верхняя треугольная матрица.
+
+Система 
+$$
+Ax = b 
+$$
+полчает вид 
+$$
+Rx = Q^Tb
+$$
+Такая система решается просто. Последовательно находим $ x_n,\; x_{n-1},\; \ldots,\; x_1 $. 
+
+
+\section*{Краткое описание реализации.}
+
+    Основные функции
+    \begin{itemize}
+        \item \textbf{NTriangularMatrix::SolveSystem} - решение СЛАУ с треугольной матрицей.
+        \item \textbf{NGivensRotations::SolveSystem} - решение СЛАУ вращениями Гивенса.
+        \item \textbf{NGivensRotations::SystemToTriangular} - приведение матрицы к треугольной форме вращениями Гивенса.
+    \end{itemize}
+    
+    Вся реализация сохранена в репозитории \textbf{GitHub: \href{https://github.com/ypodlesov}{ypodlesov}}
+
+\section*{Тест и замер времени работы программы.}
+
+    Тест реализован в файле \textbf{tests/givens\_rotations\_ut.cpp}. Он проверяет, что вектор решение $ x $ при умножении на матрицу $ A $ отличается от вектора $ b $ по $l_2$ норме меньше чем на $ \varepsilon = 10^{-6}$. 
+    
+    На данной в входном файле матрице $ A \in \mathbb{R}^{100 \times 100} $ программа показывает следующие результаты: 
+
+    \begin{lstlisting}[caption=Результаты работы программы, style=chstyle, language=bash]
+Run on (32 X 1995.31 MHz CPU s)
+CPU Caches:
+L1 Data 32 KiB (x32)
+L1 Instruction 32 KiB (x32)
+L2 Unified 4096 KiB (x16)
+L3 Unified 16384 KiB (x1)
+Load Average: 0.28, 0.18, 0.11
+---------------------------------------------------------
+Benchmark               Time             CPU   Iterations
+---------------------------------------------------------
+BM_SolveSystem   67812391 ns     67810825 ns           16
+    \end{lstlisting}
+
+    То есть $ \approx 0.067 $ секунды.
+
+\end{document}

@@ -1,0 +1,8 @@
+# 3_ctm_nmla_fall_spring
+[submodule "GKlib"]
+	path = 3_ctm_nmla_fall_spring/GKlib
+	url = https://github.com/KarypisLab/GKlib
+
+[submodule "METIS"]
+	path = 3_ctm_nmla_fall_spring/METIS
+	url = https://github.com/KarypisLab/METIS

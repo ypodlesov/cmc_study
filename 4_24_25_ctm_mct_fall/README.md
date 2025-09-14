@@ -1,0 +1,1 @@
+# MCT - modern computing technologies
