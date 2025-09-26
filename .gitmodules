@@ -1,8 +1,15 @@
-# 3_ctm_nmla_fall_spring
 [submodule "GKlib"]
 	path = 3_ctm_nmla_fall_spring/GKlib
 	url = https://github.com/KarypisLab/GKlib
-
 [submodule "METIS"]
 	path = 3_ctm_nmla_fall_spring/METIS
 	url = https://github.com/KarypisLab/METIS
+[submodule "4_ctm_mct_fall/INMOST"]
+	path = 4_ctm_mct_fall/INMOST
+	url = git@github.com:INMOST-DEV/INMOST.git
+[submodule "4_ctm_mct_fall/practicum_2025_autumn"]
+	path = 4_ctm_mct_fall/practicum_2025_autumn
+	url = git@github.com:denis-anuprienko/practicum_2025_autumn.git
+[submodule "4_ctm_mmna_fall"]
+	path = 4_ctm_mmna_fall
+	url = gitea@10.149.206.202:403-group-25-26/ypodlesov.git
