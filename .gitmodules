@@ -13,3 +13,6 @@
 [submodule "4_ctm_mmna_fall"]
 	path = 4_ctm_mmna_fall
 	url = gitea@10.149.206.202:403-group-25-26/ypodlesov.git
+[submodule "4_ctm_system_solutions_prac_spring/mipt-solvers"]
+	path = 4_ctm_system_solutions_prac_spring/mipt-solvers
+	url = git@github.com:kirill-terekhov/mipt-solvers.git
