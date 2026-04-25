@@ -1,0 +1,108 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matcomp"
+version = "0.1.0"
+description = "Matrix and tensor computation algorithms (CMC practicum)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Yegor Podlesov" }]
+dependencies = [
+    "numpy>=1.26",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "mypy>=1.8",
+    "ruff>=0.4",
+    "scipy>=1.11",  # only used as a test oracle for pivoted QR
+]
+docs = [
+    "sphinx>=7.2",
+    "numpydoc>=1.6",
+    "furo>=2024.1",
+    "sphinx-autodoc-typehints>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+# NumPy ops return Any to mypy regardless of strictness. Relaxing this
+# avoids hundreds of `cast(FloatArray, ...)` calls in the algorithms;
+# the rest of the strict gates still catch real type bugs.
+warn_return_any = false
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "matplotlib.*"
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",  # pycodestyle / pyflakes
+    "I",            # isort
+    "N",            # pep8-naming
+    "UP",           # pyupgrade
+    "B",            # flake8-bugbear
+    "NPY",          # numpy-specific
+    "PLR",          # pylint refactor
+    "ANN",          # type annotations
+    "D",            # docstrings
+]
+ignore = [
+    "E501",     # line length (handled by formatter)
+    "PLR0913",  # too many arguments
+    "PLR0912",  # too many branches (ACA / cross have legitimate complexity)
+    "PLR0915",  # too many statements
+    "PLR2004",  # magic-value comparison — too noisy for scientific code
+    "D203",     # one-blank-line-before-class (mutually exclusive with D211)
+    "D213",     # multi-line-summary-second-line (mutually exclusive with D212)
+    "D301",     # escape sequences in docstrings — needed for MathJax \( \) macros
+    "D401",     # non-imperative-mood — acceptable for math definitions
+    "D102",     # undocumented public method — many are trivial protocol passthroughs
+    "N806",     # uppercase locals: standard for matrix variables (A, Q, R, U, V, S, M, ...)
+    "N803",     # uppercase function arguments — same reason
+    "E741",     # ambiguous variable names (I, J for index sets — standard math notation)
+    "E731",     # lambda assignment — lighter than def for matvec callbacks in tests
+    "ANN401",   # allow Any in narrow places (e.g., kwargs forwarding)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "ANN"]
+"experiments/*" = ["D", "ANN"]
+"docs/*" = ["D", "ANN"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    # safe_pinv emits RuntimeWarning informationally when callers feed it
+    # an ill-conditioned matrix; that is not a test failure.
+    "ignore:safe_pinv:RuntimeWarning",
+]
