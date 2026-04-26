@@ -10,8 +10,11 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
+import numpy.typing as npt
 
 from matcomp.utils.functional_matrix import FloatArray
+
+IntArray = npt.NDArray[np.integer]
 
 
 def modified_gram_schmidt(Q: FloatArray, v: FloatArray) -> tuple[FloatArray, FloatArray]:
@@ -141,4 +144,66 @@ def truncate_svd(
     return U[:, :r], S[:r], Vt[:r, :], r
 
 
-__all__ = ["modified_gram_schmidt", "safe_pinv", "truncate_svd"]
+def maxvol(B: FloatArray, *, max_iter: int = 50, tol: float = 1.05) -> IntArray:
+    r"""Find a row subset of ``B`` with quasi-maximal :math:`|\det|`.
+
+    Standard maxvol heuristic of Goreinov, Tyrtyshnikov and Zamarashkin
+    (*Linear Algebra Appl.* 261, 1997). ``B`` has shape :math:`(N, r)`
+    with :math:`N \ge r`. The returned permutation has length :math:`N`;
+    the first :math:`r` entries are the chosen rows.
+
+    Parameters
+    ----------
+    B
+        Input matrix of shape :math:`(N, r)`.
+    max_iter
+        Maximum number of swap iterations.
+    tol
+        Stopping criterion: stop when no candidate row in the residual
+        :math:`Z = B\,A^{-1}` (with :math:`A = B[I, :]`) exceeds ``tol``
+        in absolute value. The canonical default 1.05 is from the
+        original paper.
+
+    Returns
+    -------
+    numpy.ndarray
+        Permutation of ``range(N)``; the first ``r`` entries are the
+        selected rows.
+
+    Notes
+    -----
+    Used by Task 2 (cross approximation, ``init="maxvol"``) and Task 13
+    (TT-cross). Both share this single tested implementation.
+    """
+    N, r = B.shape
+    if N < r:
+        raise ValueError(f"maxvol requires N >= r, got N={N}, r={r}")
+    perm = np.arange(N, dtype=np.intp)
+    # Initial pivot via Gaussian elimination with partial pivoting.
+    work = B.astype(np.float64, copy=True)
+    for k in range(r):
+        idx = k + int(np.argmax(np.abs(work[k:, k])))
+        if idx != k:
+            perm[[k, idx]] = perm[[idx, k]]
+            work[[k, idx]] = work[[idx, k]]
+        if abs(work[k, k]) < np.finfo(float).tiny:
+            break
+        work[k + 1 :, k:] -= np.outer(work[k + 1 :, k] / work[k, k], work[k, k:])
+
+    # Maxvol refinement: solve B = Z @ B[I, :], swap until no |Z[i,j]| > tol.
+    for _ in range(max_iter):
+        B_perm = B[perm]
+        sub = B_perm[:r]
+        try:
+            Z = np.linalg.solve(sub.T, B_perm.T).T  # B_perm @ inv(sub), shape (N, r)
+        except np.linalg.LinAlgError:
+            break
+        flat_idx = int(np.argmax(np.abs(Z)))
+        i_max, j_max = divmod(flat_idx, r)
+        if abs(Z[i_max, j_max]) <= tol:
+            break
+        perm[[j_max, i_max]] = perm[[i_max, j_max]]
+    return perm
+
+
+__all__ = ["IntArray", "maxvol", "modified_gram_schmidt", "safe_pinv", "truncate_svd"]

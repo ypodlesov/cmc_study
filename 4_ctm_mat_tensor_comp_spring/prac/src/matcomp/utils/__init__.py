@@ -1,6 +1,6 @@
-"""Shared utilities used by every matrix algorithm in this project.
+"""Shared utilities used by every matrix and tensor algorithm in this project.
 
-The submodules are deliberately small and orthogonal:
+Matrix-side (Tasks 1–7):
 
 * :mod:`matcomp.utils.functional_matrix` — the central :class:`FunctionalMatrix`
   protocol and concrete black-box matrix subclasses.
@@ -11,10 +11,29 @@ The submodules are deliberately small and orthogonal:
   exact low-rank / low-rank+noise matrices.
 * :mod:`matcomp.utils.metrics` — relative Frobenius / spectral / sample-RMSE
   errors and the compression-ratio metric.
-* :mod:`matcomp.utils.counting` — :class:`CountingFunctionalMatrix` wrapper.
-* :mod:`matcomp.utils.caching` — :class:`CachedFunctionalMatrix` wrapper.
+
+Tensor-side (Tasks 8–13):
+
+* :mod:`matcomp.utils.functional_tensor` — :class:`FunctionalTensor` protocol
+  and the d-mode :class:`DenseTensor` adapter.
+* :mod:`matcomp.utils.tensor_linalg` — unfold / fold / mode-n product /
+  Khatri–Rao / MTTKRP / CP inner product / TT contraction / multilinear
+  rank.
+* :mod:`matcomp.utils.tensor_low_rank` — :class:`LowRankTensor` protocol
+  and the carriers ``CPFactors``, ``TuckerFactors``, ``TTFactors``.
+* :mod:`matcomp.utils.tensor_test_objects` — CP / Tucker / Hilbert-3D /
+  Gaussian-kernel-3D / function-oracle test tensors.
+* :mod:`matcomp.utils.tensor_metrics` — tensor-side relative error,
+  sample RMSE and compression metrics.
+
+Cross-cutting:
+
+* :mod:`matcomp.utils.counting` — :class:`CountingFunctionalMatrix` and
+  :class:`CountingFunctionalTensor` wrappers.
+* :mod:`matcomp.utils.caching` — :class:`CachedFunctionalMatrix` and
+  :class:`CachedFunctionalTensor` wrappers.
 * :mod:`matcomp.utils.linalg` — modified Gram–Schmidt, ``safe_pinv``,
-  truncated-SVD selector.
+  truncated-SVD selector, ``maxvol``.
 * :mod:`matcomp.utils.plotting` — shared Matplotlib style and ``save_fig``.
 * :mod:`matcomp.utils.seeding` — :func:`make_rng` for reproducible RNGs.
 * :mod:`matcomp.utils.timing` — perf-counter helpers.

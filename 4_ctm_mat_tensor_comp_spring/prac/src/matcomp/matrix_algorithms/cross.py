@@ -26,7 +26,7 @@ import numpy as np
 from matcomp.matrix_algorithms.adaptive_cross import adaptive_cross_cached
 from matcomp.utils.counting import CountingFunctionalMatrix, OracleCounts
 from matcomp.utils.functional_matrix import FloatArray, FunctionalMatrix, IntArray
-from matcomp.utils.linalg import safe_pinv
+from matcomp.utils.linalg import maxvol, safe_pinv
 from matcomp.utils.low_rank import CMRFactors
 from matcomp.utils.seeding import make_rng
 
@@ -86,60 +86,6 @@ class CrossResult:
 
     def factors_memory(self) -> int:
         return self.factors.factors_memory()
-
-
-def _maxvol(B: FloatArray, max_iter: int = 50, tol: float = 1.05) -> IntArray:
-    r"""Find a row subset of ``B`` with quasi-maximal :math:`|\det|`.
-
-    Implements the standard maxvol heuristic (Goreinov et al.). ``B`` has
-    shape :math:`(N, r)` with :math:`N \ge r`. The returned permutation
-    has length :math:`N`; the first :math:`r` entries are the chosen rows.
-
-    Parameters
-    ----------
-    B
-        Input matrix of shape :math:`(N, r)`.
-    max_iter
-        Maximum number of swaps.
-    tol
-        Stop when no candidate improves :math:`|\det A[I]|` by more than
-        ``tol``. The default (1.05) is the canonical choice from the
-        original paper.
-    """
-    N, r = B.shape
-    if N < r:
-        raise ValueError("maxvol requires N >= r")
-    perm = np.arange(N, dtype=np.intp)
-    # Initial pivot: pick rows by Householder column-pivoted QR.
-    # We re-use np.linalg.qr by transposing: pivot of B^T gives row pivots of B.
-    Q, _ = np.linalg.qr(B, mode="reduced")
-    # Use simple Gaussian elimination with partial pivoting on B to
-    # discover an initial row set.
-    work = B.astype(np.float64, copy=True)
-    for k in range(r):
-        idx = k + int(np.argmax(np.abs(work[k:, k])))
-        if idx != k:
-            perm[[k, idx]] = perm[[idx, k]]
-            work[[k, idx]] = work[[idx, k]]
-        if abs(work[k, k]) < np.finfo(float).tiny:
-            break
-        work[k + 1 :, k:] -= np.outer(work[k + 1 :, k] / work[k, k], work[k, k:])
-
-    # Maxvol refinement: solve B = Z * B[I,:], then swap until no |Z[i,j]| > tol.
-    for _ in range(max_iter):
-        B_perm = B[perm]
-        sub = B_perm[:r]
-        try:
-            Z = np.linalg.solve(sub.T, B_perm.T).T  # B_perm @ inv(sub) shape (N,r)
-        except np.linalg.LinAlgError:
-            break
-        flat_idx = int(np.argmax(np.abs(Z)))
-        i_max, j_max = divmod(flat_idx, r)
-        if abs(Z[i_max, j_max]) <= tol:
-            break
-        # swap row j_max (inside the chosen set) with row i_max (outside)
-        perm[[j_max, i_max]] = perm[[i_max, j_max]]
-    return perm
 
 
 def cross_rank_r(
@@ -229,11 +175,11 @@ def cross_rank_r(
         for _ in range(max_sweeps):
             # row maxvol on A[:, J]
             C = counted.block(np.arange(m, dtype=np.intp), J)
-            row_perm = _maxvol(C)
+            row_perm = maxvol(C)
             I = np.asarray(row_perm[:r], dtype=np.intp)
             # column maxvol on A[I, :]^T
             R = counted.block(I, np.arange(n, dtype=np.intp))
-            col_perm = _maxvol(R.T)
+            col_perm = maxvol(R.T)
             J = np.asarray(col_perm[:r], dtype=np.intp)
             sweeps += 1
 

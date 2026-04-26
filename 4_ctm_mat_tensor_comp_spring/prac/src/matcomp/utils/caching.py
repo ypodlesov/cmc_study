@@ -22,7 +22,8 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 
-from matcomp.utils.functional_matrix import FloatArray, FunctionalMatrix
+from matcomp.utils.functional_matrix import FloatArray, FunctionalMatrix, IntArray
+from matcomp.utils.functional_tensor import FunctionalTensor, IndexTuple
 
 
 class CachedFunctionalMatrix:
@@ -146,4 +147,94 @@ class CachedFunctionalMatrix:
         return self._inner.rmatmat(y_block)
 
 
-__all__ = ["CachedFunctionalMatrix"]
+class CachedFunctionalTensor:
+    """Memoise a :class:`FunctionalTensor` over entries and per-mode fibers.
+
+    Tensor-side counterpart of :class:`CachedFunctionalMatrix`. TT-cross
+    (Task 13) repeatedly queries the same fibers while building cores;
+    the cache turns those into O(1) hits.
+
+    Composition order remains ``Cached(Counting(raw))`` so cache hits do
+    not bump the real-oracle counter.
+
+    Parameters
+    ----------
+    inner
+        The wrapped tensor. Typically already wrapped in a
+        :class:`CountingFunctionalTensor`.
+    """
+
+    def __init__(self, inner: FunctionalTensor) -> None:
+        self._inner = inner
+        self.shape = inner.shape
+        self.ndim = inner.ndim
+        self.dtype = inner.dtype
+        self._entry_cache: dict[IndexTuple, float] = {}
+        # fiber cache keyed by (mode, fixed_indices_with_None_at_mode)
+        self._fiber_cache: dict[tuple[int, tuple[int | None, ...]], FloatArray] = {}
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+    @property
+    def inner(self) -> FunctionalTensor:
+        """The wrapped (uncached) tensor."""
+        return self._inner
+
+    def reset_cache(self) -> None:
+        """Discard cached entries / fibers and reset counters."""
+        self._entry_cache.clear()
+        self._fiber_cache.clear()
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+    def entry(self, idx: IndexTuple) -> float:
+        key: IndexTuple = tuple(int(v) for v in idx)
+        if key in self._entry_cache:
+            self.cache_hits += 1
+            return self._entry_cache[key]
+        self.cache_misses += 1
+        value = float(self._inner.entry(key))
+        self._entry_cache[key] = value
+        return value
+
+    def fiber(self, mode: int, fixed_indices: tuple[int | None, ...]) -> FloatArray:
+        key = (int(mode), tuple(None if v is None else int(v) for v in fixed_indices))
+        if key in self._fiber_cache:
+            self.cache_hits += 1
+            return self._fiber_cache[key]
+        self.cache_misses += 1
+        out = self._inner.fiber(mode, fixed_indices)
+        self._fiber_cache[key] = out
+        return out
+
+    def block(self, indices: tuple[npt.ArrayLike, ...]) -> FloatArray:
+        # Block queries bypass the cache.
+        self.cache_misses += 1
+        return self._inner.block(indices)
+
+    def samples(self, idx_array: IntArray) -> FloatArray:
+        # Try to satisfy from the entry cache; fall back to the oracle.
+        idx = idx_array
+        n = idx.shape[0]
+        out = np.empty(n, dtype=np.float64)
+        misses_idx: list[int] = []
+        for k in range(n):
+            tup = tuple(int(v) for v in idx[k])
+            if tup in self._entry_cache:
+                self.cache_hits += 1
+                out[k] = self._entry_cache[tup]
+            else:
+                misses_idx.append(k)
+        if misses_idx:
+            self.cache_misses += 1
+            miss_array = idx[np.asarray(misses_idx, dtype=np.intp)]
+            fresh = self._inner.samples(miss_array)
+            for kk, k in enumerate(misses_idx):
+                tup = tuple(int(v) for v in idx[k])
+                value = float(fresh[kk])
+                self._entry_cache[tup] = value
+                out[k] = value
+        return out
+
+
+__all__ = ["CachedFunctionalMatrix", "CachedFunctionalTensor"]

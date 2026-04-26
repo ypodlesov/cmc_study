@@ -13,7 +13,8 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-from matcomp.utils.functional_matrix import FloatArray, FunctionalMatrix
+from matcomp.utils.functional_matrix import FloatArray, FunctionalMatrix, IntArray
+from matcomp.utils.functional_tensor import FunctionalTensor, IndexTuple
 
 
 @dataclass
@@ -111,7 +112,82 @@ class CountingFunctionalMatrix:
         return self._inner.rmatmat(y_block)
 
 
-__all__ = ["CountingFunctionalMatrix", "OracleCounts"]
+@dataclass
+class TensorOracleCounts:
+    """Per-method counters for a wrapped :class:`FunctionalTensor`."""
+
+    entry_calls: int = 0
+    block_calls: int = 0
+    fiber_calls: int = 0
+    samples_calls: int = 0
+
+    @property
+    def total(self) -> int:
+        """Sum across every counter (one logical "oracle call" per invocation)."""
+        return (
+            self.entry_calls
+            + self.block_calls
+            + self.fiber_calls
+            + self.samples_calls
+        )
+
+    def reset(self) -> None:
+        """Zero every counter."""
+        self.entry_calls = 0
+        self.block_calls = 0
+        self.fiber_calls = 0
+        self.samples_calls = 0
+
+
+class CountingFunctionalTensor:
+    """Decorator that records how often each tensor-oracle method is called.
+
+    Mirrors :class:`CountingFunctionalMatrix` for the d-mode case. Tasks
+    10 and 13 wrap their input tensor in this decorator before any
+    oracle access so their result objects can report ``oracle_counts``.
+
+    Parameters
+    ----------
+    inner
+        The wrapped :class:`FunctionalTensor`. The counter increments on
+        each call before delegating to ``inner``.
+    """
+
+    def __init__(self, inner: FunctionalTensor) -> None:
+        self._inner = inner
+        self.shape = inner.shape
+        self.ndim = inner.ndim
+        self.dtype = inner.dtype
+        self.counts = TensorOracleCounts()
+
+    @property
+    def inner(self) -> FunctionalTensor:
+        """The wrapped tensor (read-only access)."""
+        return self._inner
+
+    def entry(self, idx: IndexTuple) -> float:
+        self.counts.entry_calls += 1
+        return self._inner.entry(idx)
+
+    def block(self, indices: tuple[npt.ArrayLike, ...]) -> FloatArray:
+        self.counts.block_calls += 1
+        return self._inner.block(indices)
+
+    def fiber(self, mode: int, fixed_indices: tuple[int | None, ...]) -> FloatArray:
+        self.counts.fiber_calls += 1
+        return self._inner.fiber(mode, fixed_indices)
+
+    def samples(self, idx_array: IntArray) -> FloatArray:
+        self.counts.samples_calls += 1
+        return self._inner.samples(idx_array)
+
+
+__all__ = [
+    "CountingFunctionalMatrix",
+    "CountingFunctionalTensor",
+    "OracleCounts",
+    "TensorOracleCounts",
+]
 
 
 def _isinstance_check() -> None:

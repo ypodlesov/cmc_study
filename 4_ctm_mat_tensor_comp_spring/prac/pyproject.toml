@@ -81,6 +81,8 @@ ignore = [
     "D301",     # escape sequences in docstrings — needed for MathJax \( \) macros
     "D401",     # non-imperative-mood — acceptable for math definitions
     "D102",     # undocumented public method — many are trivial protocol passthroughs
+    "D105",     # undocumented magic method — __post_init__ etc. are Python-specific
+    "D205",     # 1-blank-line-between-summary — multi-line math summaries are clearer with the formula on the next line
     "N806",     # uppercase locals: standard for matrix variables (A, Q, R, U, V, S, M, ...)
     "N803",     # uppercase function arguments — same reason
     "E741",     # ambiguous variable names (I, J for index sets — standard math notation)

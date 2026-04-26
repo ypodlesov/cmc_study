@@ -1,11 +1,8 @@
-# matcomp — Matrix algorithms practicum (CMC)
+# matcomp — Matrix and tensor algorithms practicum (CMC)
 
-Reference implementation of matrix tasks **1–7** from the practicum
-*Practical Tasks in Matrix and Tensor Algorithms* (see
-`../practice_task_settings.pdf`).
-
-The tensor tasks (8–13) are intentionally out of scope of this package and
-will be added in a follow-up project.
+Reference implementation of matrix tasks **1–7** and tensor tasks
+**8–13** from the practicum *Practical Tasks in Matrix and Tensor
+Algorithms* (see `../practice_task_settings.pdf`).
 
 The implementation prioritises:
 
@@ -31,10 +28,13 @@ make bench                         # produce the cross-task benchmark (Task 7)
 
 | Path | Purpose |
 |------|---------|
-| `src/matcomp/utils/` | Shared scaffolding: `FunctionalMatrix`, `LowRankApprox`, oracle counting/caching wrappers, error metrics, plotting style, RNG helper. |
-| `src/matcomp/matrix_algorithms/` | One module per task — public entry points listed below. |
-| `tests/matrix_algorithms/` | One pytest file per task; shared fixtures in `tests/conftest.py`. |
-| `experiments/matrix/` | Runnable scripts that produce the plots and CSV tables for the report. |
+| `src/matcomp/utils/` | Shared scaffolding: `FunctionalMatrix` / `FunctionalTensor`, `LowRankApprox` / `LowRankTensor`, oracle counting/caching wrappers, tensor primitives (unfold/Khatri–Rao/MTTKRP/CP–CP inner product/TT contraction), error metrics, plotting style, RNG helper. |
+| `src/matcomp/matrix_algorithms/` | One module per matrix task (1–7). |
+| `src/matcomp/tensor_algorithms/` | One module per tensor task (8–13). |
+| `tests/matrix_algorithms/` | One pytest file per matrix task; shared fixtures in `tests/conftest.py`. |
+| `tests/tensor_algorithms/` | One pytest file per tensor task plus `test_tensor_linalg.py`; shared tensor fixtures in `tests/tensor_algorithms/conftest.py`. |
+| `experiments/matrix/` | Runnable scripts that produce the plots and CSV tables for matrix tasks. |
+| `experiments/tensor/` | Runnable scripts that produce the plots and CSV tables for tensor tasks (incl. `run_tensor_benchmarks.py`). |
 | `reports/figures/` | Output PNGs (organised by task). |
 | `reports/results/` | Output CSV / JSON tables. |
 | `docs/` | Sphinx sources (numpydoc + MathJax). |
@@ -50,6 +50,12 @@ make bench                         # produce the cross-task benchmark (Task 7)
 | 5 | Recompression of low-rank decompositions | `matrix_algorithms/recompression.py` | `recompress_low_rank(factors, …)` | `run_recompression.py` | `test_recompression.py` |
 | 6 | Pivoted (rank-revealing) QR | `matrix_algorithms/pivoted_qr.py` | `pivoted_qr_approx(A, …)` | `run_pivoted_qr.py` | `test_pivoted_qr.py` |
 | 7 | Quality control through SVD (cross-task benchmark) | `matrix_algorithms/svd_control.py` | `benchmark_against_svd(matrices, methods, ranks)` | `run_matrix_benchmarks.py` | `test_svd_control.py` |
+| 8 | CP-ALS from a CP source | `tensor_algorithms/cp_als_cp.py` | `cp_als_from_cp(source, target_rank, …)` | `run_cp_als_cp.py` | `test_cp_als_cp.py` |
+| 9 | CP-ALS, dense | `tensor_algorithms/cp_als_dense.py` | `cp_als(X, rank, …)` | `run_cp_als_dense.py` | `test_cp_als_dense.py` |
+| 10 | CP via differentiable optimisation | `tensor_algorithms/cp_neural.py` | `fit_cp_neural(target, rank, …)`, `CPModel` | `run_cp_neural.py` | `test_cp_neural.py` |
+| 11 | CP via Levenberg–Marquardt | `tensor_algorithms/cp_lm.py` | `cp_levenberg_marquardt(X, rank, …)` | `run_cp_lm.py` | `test_cp_lm.py` |
+| 12 | ST-HOSVD (Tucker) | `tensor_algorithms/st_hosvd.py` | `st_hosvd(X, ranks=…\| eps=…)` | `run_st_hosvd.py` | `test_st_hosvd.py` |
+| 13 | TT-cross for functional tensors | `tensor_algorithms/tt_cross.py` | `tt_cross(X, ranks=…)` | `run_tt_cross.py` | `test_tt_cross.py` |
 
 The Sphinx site (`make docs`) renders one page per task with the full math,
 algorithm pseudocode, API, results, and a *failure cases* discussion.
@@ -105,7 +111,7 @@ ratio `error_method / error_svd_best`. Also produces the unified
 
 ## Running individual tasks
 
-Each task has a script in `experiments/matrix/`:
+Each matrix task has a script in `experiments/matrix/`:
 
 ```bash
 PYTHONPATH=src python experiments/matrix/run_lanczos.py        --seed 42
@@ -116,10 +122,22 @@ PYTHONPATH=src python experiments/matrix/run_recompression.py  --seed 42
 PYTHONPATH=src python experiments/matrix/run_pivoted_qr.py     --seed 42
 ```
 
-The cross-task benchmark (Task 7):
+Each tensor task has a script in `experiments/tensor/`:
 
 ```bash
-PYTHONPATH=src python experiments/matrix/run_matrix_benchmarks.py --seed 42
+PYTHONPATH=src python experiments/tensor/run_cp_als_cp.py      --seed 42
+PYTHONPATH=src python experiments/tensor/run_cp_als_dense.py   --seed 42
+PYTHONPATH=src python experiments/tensor/run_cp_neural.py      --seed 42
+PYTHONPATH=src python experiments/tensor/run_cp_lm.py          --seed 42
+PYTHONPATH=src python experiments/tensor/run_st_hosvd.py       --seed 42
+PYTHONPATH=src python experiments/tensor/run_tt_cross.py       --seed 42
+```
+
+The cross-task benchmarks:
+
+```bash
+PYTHONPATH=src python experiments/matrix/run_matrix_benchmarks.py --seed 42  # Task 7
+PYTHONPATH=src python experiments/tensor/run_tensor_benchmarks.py --seed 42  # CP/Tucker/TT compared
 ```
 
 Outputs land under `reports/figures/<task_name>/` and `reports/results/`.
