@@ -221,8 +221,12 @@ def cp_als_from_cp(
     max_iter
         Maximum ALS sweeps.
     tol
-        Stop when the relative change in the loss falls below this. Pass
-        ``None`` to run for ``max_iter`` sweeps.
+        Stop when the absolute change in loss between consecutive sweeps
+        falls below this. Pass ``None`` to run for ``max_iter`` sweeps.
+        Note that this is an absolute, not a relative, criterion: a small
+        ``tol`` only certifies a *plateau* in the loss, not a global
+        optimum, so the experiment script reports best/mean over multiple
+        random restarts rather than relying on this flag alone.
     reg
         Tikhonov regularisation added to the normal equations.
     normalize
